@@ -1,0 +1,72 @@
+#cloud-config
+users:
+  - name: ${username}
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: sudo
+    shell: /bin/bash
+packages:
+  - git
+  - curl
+  - jq
+mounts:
+  - [
+      "${volume_path}",
+      "/home/${username}",
+      ext4,
+      "discard,defaults",
+    ]
+write_files:
+  - path: /opt/coder/init
+    permissions: "0755"
+    encoding: b64
+    content: ${init_script}
+  - path: /etc/systemd/system/coder-agent.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Coder Agent
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User=${username}
+      ExecStart=/opt/coder/init
+      Environment=CODER_AGENT_TOKEN=${coder_agent_token}
+      Restart=always
+      RestartSec=10
+      TimeoutStopSec=90
+      KillMode=process
+
+      OOMScoreAdjust=-900
+      SyslogIdentifier=coder-agent
+
+      [Install]
+      WantedBy=multi-user.target
+%{ if code_server_setup ~}
+  - path: /tmp/install_code_server.sh
+    permissions: "0777"
+    content: |
+      #!/bin/bash
+      CODE_SERVER_DOWNLOAD_URL=$(curl -sL https://api.github.com/repos/coder/code-server/releases/latest | jq -r '.assets[].browser_download_url' | grep "amd64.deb")
+      curl -fL $CODE_SERVER_DOWNLOAD_URL -o /tmp/code_server.deb
+      dpkg -i /tmp/code_server.deb
+      systemctl enable --now code-server@${username}
+      rm /tmp/code_server.deb
+  - path: /tmp/install_code_server.sh
+    permissions: "0777"
+    content: |
+  - path: /home/${username}/.config/code-server/config.yaml
+    permissions: "0644"
+    content: |
+      bind-addr: 127.0.0.1:8080
+      auth: none
+      cert: false
+%{ endif ~}
+runcmd:
+  - chown ${username}:${username} /home/${username}
+  - systemctl enable coder-agent
+  - systemctl start coder-agent
+%{ if code_server_setup ~}
+  - /tmp/install_code_server.sh
+  - rm /tmp/install_code_server.sh
+%{ endif }
