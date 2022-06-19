@@ -57,10 +57,10 @@ variable "instance_os" {
 }
 
 variable "volume_size" {
-  description = "How much storage space do you need?"
-  default     = "50"
+  description = "How much storage space do you need in GB (can't be less then 10)?"
+  default     = "10"
   validation {
-    condition     = contains(["50","100","150"], var.volume_size)
+    condition     = length(var.volume_size) => 10
     error_message = "Invalid volume size!"
   }
 }
