@@ -86,7 +86,7 @@ resource "coder_app" "code-server" {
   count         = var.code_server ? 1 : 0
   agent_id      = coder_agent.dev.id
   name          = "code-server"
-  icon          = "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_vscode_icon_130084.png"
+  icon          = "/code.svg"
   url           = "http://localhost:8080"
   relative_path = true
 }
