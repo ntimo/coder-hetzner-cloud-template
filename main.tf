@@ -2,7 +2,7 @@ terraform {
   required_providers {
     coder = {
       source  = "coder/coder"
-      version = "0.4.2"
+      version = "0.5.0"
     }
     hcloud = {
       source  = "hetznercloud/hcloud"
@@ -60,7 +60,7 @@ variable "volume_size" {
   description = "How much storage space do you need in GB (can't be less then 10)?"
   default     = "10"
   validation {
-    condition     = length(var.volume_size) => 10
+    condition     = var.volume_size >= 10
     error_message = "Invalid volume size!"
   }
 }
