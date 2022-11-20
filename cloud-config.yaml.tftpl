@@ -52,9 +52,6 @@ write_files:
       dpkg -i /tmp/code_server.deb
       systemctl enable --now code-server@${username}
       rm /tmp/code_server.deb
-  - path: /tmp/install_code_server.sh
-    permissions: "0777"
-    content: |
   - path: /home/${username}/.config/code-server/config.yaml
     permissions: "0644"
     content: |
