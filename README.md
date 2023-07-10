@@ -8,3 +8,6 @@ This template will do the following:
 - Add volumes and firewall policy to the instance
 - Ask the user if code-server should be installed and if so installs it
 
+# apply 
+coder template init
+coder template push  --variable "hcloud_token=token"  
