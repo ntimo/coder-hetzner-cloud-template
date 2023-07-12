@@ -3,7 +3,7 @@ users:
   - name: ${username}
     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
     groups: sudo
-    shell: /bin/bash
+    shell: /usr/bin/bash
 packages:
   - git
   - curl
@@ -43,27 +43,34 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 %{ if code_server_setup ~}
-  - path: /tmp/install_code_server.sh
-    permissions: "0777"
-    content: |
-      #!/bin/bash
-      CODE_SERVER_DOWNLOAD_URL=$(curl -sL https://api.github.com/repos/coder/code-server/releases/latest | jq -r '.assets[].browser_download_url' | grep "amd64.deb")
-      curl -fL $CODE_SERVER_DOWNLOAD_URL -o /tmp/code_server.deb
-      dpkg -i /tmp/code_server.deb
-      systemctl enable --now code-server@${username}
-      rm /tmp/code_server.deb
-  - path: /home/${username}/.config/code-server/config.yaml
+  - path: /etc/systemd/system/code-server.service
     permissions: "0644"
     content: |
-      bind-addr: 127.0.0.1:8080
-      auth: none
-      cert: false
+      [Unit]
+      Description=code server
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User=${username}
+      ExecStart=/opt/coder/install_code_server
+      Restart=always
+      RestartSec=10
+      TimeoutStopSec=90
+      KillMode=process
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: /opt/coder/install_code_server
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env sh
+      curl -fsSL https://code-server.dev/install.sh | sh
+      /usr/bin/code-server --bind-addr 127.0.0.1:13337 --user-data-dir /home/${username}/.vscode --auth none
 %{ endif ~}
 runcmd:
   - chown ${username}:${username} /home/${username}
-  - systemctl enable coder-agent
-  - systemctl start coder-agent
+  - systemctl enable --now coder-agent
 %{ if code_server_setup ~}
-  - /tmp/install_code_server.sh
-  - rm /tmp/install_code_server.sh
+  - systemctl enable --now code-server
 %{ endif }
