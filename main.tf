@@ -163,6 +163,14 @@ data "coder_parameter" "volume_size" {
   }
 }
 
+data "coder_parameter" "dotfiles_uri" {
+  name        = "Dotfiles URL"
+  description = "Optional"
+  default     = ""
+  type        = "string"
+  mutable     = true
+}
+
 data "coder_parameter" "code_server" {
   name        = "code_server"
   description = "Should Code-server be installed?"
@@ -177,6 +185,7 @@ data "coder_workspace" "me" {
 resource "coder_agent" "dev" {
   arch = strcontains(data.coder_parameter.instance_type.value, "cax") ? "arm64" : "amd64"
   os   = "linux"
+  startup_script = data.coder_parameter.dotfiles_uri.value != "" ? "/tmp/coder*/coder dotfiles -y ${data.coder_parameter.dotfiles_uri.value}" : null
 }
 
 resource "coder_app" "code-server" {
